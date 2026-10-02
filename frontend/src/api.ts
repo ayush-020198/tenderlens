@@ -24,7 +24,7 @@ export interface Answer {
 export interface Message { id: string; question: string; result: Answer; created_at: string }
 export interface PackageDetail extends TenderPackage { documents: TenderDocument[]; messages: Message[] }
 export interface Config {
-  country: 'IN'; google_configured: boolean; gemma_model: string; ollama_model: string
+  country: 'IN'; google_configured: boolean; google_free_tier_confirmed: boolean; gemma_model: string; ollama_model: string
   retrieval_mode: string; rerank_enabled: boolean; ocr_enabled: boolean
   ocr_languages: string; max_upload_mb: number; max_pages: number; single_user: boolean
 }

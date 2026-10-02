@@ -12,6 +12,8 @@ htmlcov/
 data/
 models/
 frontend/node_modules/
+/node_modules/
+/server/dist/
 frontend/dist/
 frontend/playwright-report/
 frontend/test-results/

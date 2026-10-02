@@ -1,0 +1,53 @@
+{
+  "name": "Campus network upgrade",
+  "reference": "SYNTHETIC / TL-IN / 2026 / 001",
+  "description": "Original fictional Indian tender package for testing. Not a live procurement. No institution, supplier, or policy is represented.",
+  "documents": [
+    {
+      "name": "01_Demo_Notice_and_Eligibility.pdf",
+      "kind": "tender",
+      "issued_on": "2026-10-01",
+      "pages": [
+        {
+          "title": "Notice inviting tender",
+          "text": "SYNTHETIC DEMO - NOT A LIVE TENDER\nTender reference: SYNTHETIC / TL-IN / 2026 / 001\nProject: Campus network upgrade at a fictional training campus in India.\n\n1. Scope\nSupply, installation and commissioning of network equipment listed in the Bill of Quantities. Delivery location: Bengaluru, Karnataka, India.\n\n2. Critical dates\nOriginal bid submission deadline: 20 October 2026 at 15:00 IST.\nTechnical bid opening: 21 October 2026 at 11:00 IST.\nClarification questions must be submitted by 10 October 2026 at 17:00 IST.\nCheck all supplied corrigenda before relying on these dates.\n\n3. Bid security and fee\nEarnest Money Deposit (EMD): INR 50,000 (fifty thousand rupees).\nTender processing fee: INR 1,000, non-refundable.\nNo EMD exemption is specified in this fictional package; an exemption must not be inferred from MSME registration.\n\n4. Bid validity\nThe bid must remain valid for 90 days from the final submission deadline."
+        },
+        {
+          "title": "Eligibility and submission checklist",
+          "text": "SYNTHETIC DEMO - NOT A LIVE TENDER\n\n5. Financial eligibility\nAverage annual turnover of at least INR 25 lakh across FY 2023-24, FY 2024-25 and FY 2025-26. Submit audited financial statements for all three financial years and a chartered accountant's turnover certificate.\n\n6. Technical eligibility\nAt least two completed similar network installation contracts in the last three years, each with value of at least INR 10 lakh. Submit work orders and completion certificates.\n\n7. Mandatory documents\nSubmit PAN, GST registration, signed bid form, EMD payment proof, turnover certificate, audited financial statements, completion certificates and manufacturer authorization.\nUdyam registration may be included if available; it does not establish an EMD exemption under this package.\n\n8. Commercial instructions\nQuote prices in INR. State GST separately; the quoted base price must exclude GST. No GST percentage is prescribed in this package.\nDo not include prices in the technical bid.\n\n9. Delivery and warranty\nDelivery and commissioning within 45 days of the purchase order. Minimum on-site warranty: three years."
+        }
+      ]
+    },
+    {
+      "name": "02_Demo_BOQ.pdf",
+      "kind": "boq",
+      "issued_on": "2026-10-01",
+      "pages": [
+        {
+          "title": "Bill of quantities",
+          "text": "SYNTHETIC DEMO - NOT A LIVE TENDER\nSchedule A - Bill of Quantities\nTender reference: SYNTHETIC / TL-IN / 2026 / 001\nAll quantities below are required. Brand names are not specified.\nBase prices must exclude GST. Bidder must state GST separately.\nQuantity is not the unit price; do not infer a budget from this schedule.",
+          "table": [
+            ["Item", "Description", "Quantity", "Unit", "Minimum warranty"],
+            ["1", "24-port managed PoE switch", "12", "Nos.", "3 years"],
+            ["2", "Dual-band wireless access point", "40", "Nos.", "3 years"],
+            ["3", "Cat 6 cable", "1800", "metres", "3 years"],
+            ["4", "Installation and commissioning", "1", "lot", "Not applicable"]
+          ],
+          "footnote": "Footnote A: PoE switches must support all 24 ports. Footnote B: The 45-day delivery requirement applies to the complete lot."
+        }
+      ]
+    },
+    {
+      "name": "03_Demo_Corrigendum_01.pdf",
+      "kind": "corrigendum",
+      "issued_on": "2026-10-08",
+      "amends_index": 0,
+      "pages": [
+        {
+          "title": "Corrigendum 01 - dates only",
+          "text": "SYNTHETIC DEMO - NOT A LIVE TENDER\nTender reference: SYNTHETIC / TL-IN / 2026 / 001\nIssued: 8 October 2026 (fictional scenario)\n\nThis corrigendum amends only clause 2 (Critical dates) of 01_Demo_Notice_and_Eligibility.pdf.\nThe bid submission deadline is extended from 20 October 2026 at 15:00 IST to 27 October 2026 at 15:00 IST.\nThe technical bid opening is revised to 28 October 2026 at 11:00 IST.\nThe clarification deadline remains 10 October 2026 at 17:00 IST.\n\nAll other clauses, eligibility requirements, quantities, EMD and fee remain unchanged.\nThis synthetic future-dated amendment exists solely to exercise document precedence in the demo. It is not a real notice."
+        }
+      ]
+    }
+  ]
+}

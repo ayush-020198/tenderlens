@@ -9,8 +9,8 @@ The rest of the application UI was written for TenderLens; its theme was adapted
 to a responsive tender workspace. The Apache license is preserved in
 `licenses/Apache-2.0.txt`.
 
-React, Vite, Lucide, FastAPI, pdfplumber, PDFium bindings, ReportLab, Tesseract,
-FastEmbed, model assets, and other dependencies retain their respective licenses.
+React, Vite, Lucide, Express, PDF.js/pdf-parse, PDFKit, Sharp, Tesseract.js,
+packaged OCR model assets, and other dependencies retain their respective licenses.
 Consult their package metadata and model cards before redistribution.
 
 Real tender PDFs remain the property of their publishers. A publicly accessible

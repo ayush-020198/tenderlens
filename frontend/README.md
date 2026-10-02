@@ -11,7 +11,7 @@ npm ci
 npm run dev
 ```
 
-The dev server binds to `127.0.0.1:5173` and proxies `/api` to the local backend
-at port 8000. Run `npm run build` for production assets and `npm run test:e2e`
+The dev server binds to `127.0.0.1:5173` and proxies `/api` to the Node backend
+at port 8000 (`npm run dev:api` from the repository root). Run `npm run build` for production assets and `npm run test:e2e`
 for browser flows. `MOCK_API=1` runs UI contract fixtures only, not real backend
 or model validation.

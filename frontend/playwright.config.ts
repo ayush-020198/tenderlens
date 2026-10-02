@@ -24,16 +24,18 @@ export default defineConfig({
   webServer: {
     command: mock
       ? 'npm run dev -- --port 8765'
-      : 'uv run uvicorn tenderlens.api:create_app --factory --host 127.0.0.1 --port 8765',
+      : 'npm run dev:api',
     cwd: mock ? import.meta.dirname : path.resolve(import.meta.dirname, '..'),
     url: 'http://127.0.0.1:8765',
     reuseExistingServer: false,
     timeout: 120_000,
     env: {
-      TENDERLENS_DATA_DIR: path.resolve(import.meta.dirname, '../data/e2e'),
+      TENDERLENS_DATA_DIR: path.resolve(import.meta.dirname, `../data/e2e-${process.pid}`),
       RETRIEVAL_MODE: 'bm25',
       GEMINI_API_KEY: '',
+      GEMINI_FREE_TIER_CONFIRMED: 'false',
       OCR_ENABLED: 'false',
+      PORT: '8765',
     },
   },
 })

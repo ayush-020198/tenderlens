@@ -2,283 +2,312 @@
 
 **Read the tender. Know what matters.**
 
-An evidence-first workspace for Indian tender notices, annexures, BOQs, forms
-and corrigenda. Upload a package, ask a question, and inspect the exact source
-page instead of trusting an unsupported answer.
+An India-first workspace for tender notices, annexures, BOQs, forms and corrigenda.
+Ask a question, inspect the supporting passages, and open the original source page.
 
-**Status:** functional single-user prototype. **India-only, English-first.**
-No model has been trained or fine-tuned. This is not a procurement authority,
-legal adviser, bidder-eligibility certification tool, or automatic bid submitter.
+**Local-first. API-first for generated answers. No training. No paid fallback.**
+This is a single-user prototype, not a procurement authority, legal adviser,
+bidder-eligibility certification tool or automatic bid submitter.
 
-## What you can do
+![TenderLens India workspace](docs/images/workspace-overview.png)
 
-- Group related documents into a tender package; retain page-level provenance.
-- Search EMD, bid fees, GST wording, turnover, eligibility, quantities and deadlines.
-- Inspect extracted text, detected PDF tables, original pages and quoted evidence.
-- Include explicit corrigendum links without treating upload order as legal precedence.
-- Choose no-key evidence search, hosted Gemma 4, or an existing local Ollama model.
+*The interface uses original synthetic documents. Screenshots demonstrate the
+workspace, not a claim that generated answers are always correct.*
 
-The responsive React interface includes light/dark themes, package navigation,
-an evidence panel, a source-page drawer, provider disclosure and visible errors.
-The bundled demo is **entirely synthetic**, including its future-dated amendment.
+## Start here
 
-## API or local model?
+| Question | Answer |
+|---|---|
+| Are we building/training a model? | No. We use pretrained OCR, optional local embeddings and an existing Gemma model. |
+| API or local? | Gemma 4 through the Gemini API for generated answers; processing and retrieval stay local. |
+| Can I try it without a key? | Yes. Evidence-only mode retrieves actual passages and clearly identifies itself as non-generative. |
+| Does it need Python? | **No. Node.js 24 is the only runtime prerequisite.** |
+| Will it enable billing? | **No.** The app requires an explicit Free-tier confirmation, restricts hosted model IDs, and never upgrades or switches to a paid model. |
 
-**API-first for generated answers; local-first for document processing.**
+## Why the Node-only runtime?
 
-| Mode | What happens | Requirements |
-|---|---|---|
-| Evidence only (default) | Retrieves real passages; does **not** pretend to generate an AI answer | No model or API key |
-| Gemma via Gemini API | Sends selected passages, recent questions and optionally up to two page images to Google | Server-side API key, model access and per-request user consent |
-| Local Ollama | Sends context to a loopback Ollama server | An already installed model; no automatic model download |
+The initial Python draft could not install dependencies on the development
+DevBox because its package-file host was blocked. The current implementation uses
+the normally permitted npm ecosystem instead: TypeScript, Express, built-in
+SQLite, PDF.js-based extraction, local Tesseract.js OCR, and React.
 
-Google's [Gemma API documentation](https://ai.google.dev/gemma/docs/core/gemma_on_gemini_api)
-lists `gemma-4-26b-a4b-it` and `gemma-4-31b-it`, including image input.
-The default is `gemma-4-26b-a4b-it`. Account availability, quota and policies still
-apply. No live Google request is made by the default tests.
+This is a runtime change, **not a proxy, mirror, TLS exception or network-policy
+bypass**. Python is not required to run, test, extract, OCR or demonstrate the app.
+The initial draft remains in Git history; it is not a second supported backend.
 
-API-first is **not** offline. The app never switches from a failed local model
-to a hosted provider, and it never substitutes another model after a Gemma error.
-Model access, timeout, invalid JSON and mismatched citations are visible failures.
+Lockfiles retain versions and integrity hashes but omit registry-specific
+download URLs. Installs use the registry already approved/configured on your
+machine; this repository does not set a registry or include registry credentials.
 
-## Architecture
+## Features and honest boundaries
 
-```text
-React / TypeScript / Vite
-           |
-        FastAPI
-           |
-  SQLite + private local uploads
-           |
-  Native PDF/text extraction ---- scanned pages -> optional local Tesseract OCR
-           |
-  Page-bound text chunks + table rows + document/amendment metadata
-           |
-  BM25 baseline OR multilingual embeddings + BM25 + optional reranking
-           |
-  Evidence-only response OR consent-gated Gemma / loopback Ollama
-           |
-  Answer schema + source-ID / verbatim-quote validation
-           |
-  Answer + evidence cards + original page
-```
+- Group notices, annexures, BOQs and corrigenda in a single tender package.
+- Ask about EMD, bid fees, GST wording, turnover, eligibility, quantities and dates.
+- Inspect page-linked passages, detected PDF tables, text and original page images.
+- Retain explicit amendment links without equating upload order with precedence.
+- Use responsive light/dark views with visible provider, consent and failure states.
 
-The model does **not** receive the complete repository or an entire tender by
-default. Documents are data, not executable instructions. No model tools, web
-search, document-supplied URLs or shell execution are enabled.
+**English-first, Indian-document focus.** Hindi OCR assets are included, but
+regional-language accuracy has not been established. The app does not verify
+jurisdiction or automatically apply procurement law.
 
-### Deliberate limits
-
-- PDF, PNG, JPG and UTF-8 TXT uploads; **Excel/CSV BOQs and DOCX are not supported yet**.
-- Maximum 15 MB per file, 80 PDF pages and 20 documents per package by default.
-- Local OCR is optional and explicit. Unreadable PDF pages are flagged; an
-  entirely unreadable upload fails rather than appearing successful.
-- A citation can match its source while the model still misinterprets it.
-  **Quote matching is not semantic verification or a guarantee of correctness.**
-- This synchronous, single-worker prototype is not designed for large concurrent
-  OCR jobs, multi-user authorization or public deployment.
+Supported uploads: PDF, PNG, JPG and UTF-8 TXT. **Excel/CSV BOQs and DOCX are not
+supported yet.** Limits: 15 MB per file, 80 PDF pages, 20 documents per package.
+Complex/scanned tables may lose column relationships; original-page review is
+required. Unreadable pages and extraction failures are surfaced explicitly.
 
 ## Quick start
 
 ### Prerequisites
 
-- Python **3.12 or 3.13**; Python 3.12 is the tested target.
-- [uv](https://docs.astral.sh/uv/getting-started/installation/).
-- Node.js **24 LTS** recommended (Vite requires Node 20.19+ or 22.12+).
-- Access to the permitted package registries; optional Tesseract for scans.
-- Your personal GitHub access for this private repository.
+Use Node.js **24.x** and npm. Node 24's built-in SQLite API currently emits an
+experimental-feature warning; the application pins this major version.
+No Python, Docker, GPU, paid database or cloud deployment is required.
 
-### 1. Clone and configure
+### 1. Clone and install
 
 ```powershell
 git clone https://github.com/ayush-020198/tenderlens.git
 cd tenderlens
-Copy-Item .env.example .env
-uv sync --python 3.12
-```
-
-Do not put credentials in source code, `VITE_*` variables, command history,
-screenshots, dataset manifests or Git commits. `.env` and `data/` are ignored.
-
-### 2. Build the UI
-
-```powershell
+npm ci
 npm --prefix frontend ci
-npm --prefix frontend run build
 ```
 
-### 3. Start the application
+The repository is private. Use your authorized personal GitHub account.
+
+### 2. Configure and build
 
 ```powershell
-uv run uvicorn tenderlens.api:create_app --factory --host 127.0.0.1 --port 8000
+if (-not (Test-Path .env)) { Copy-Item .env.example .env }
+npm run build
 ```
 
-Open **http://127.0.0.1:8000** and choose **Take a closer look**.
-The app generates the synthetic Indian PDF package locally and indexes it.
-Ask about the submission deadline, EMD or BOQ. Default answers are clearly labeled
-**Evidence search**, not Gemma-generated text.
+Do not overwrite an existing `.env`. Never put API keys in source code, `VITE_*`
+variables, screenshots, dataset manifests or Git commits.
 
-For UI development, run the API command above in one terminal, then:
+### 3. Run
 
 ```powershell
-cd frontend
-npm run dev
+npm start
 ```
 
-Open **http://127.0.0.1:5173**. Vite proxies `/api` to the local backend.
-Stop each foreground process with Ctrl+C when finished.
+Open **http://127.0.0.1:8000**. Choose **Take a closer look** to load the original
+synthetic Indian package. Ask about its deadline, EMD or BOQ.
 
-### 4. Enable Gemma answers
+The default **Evidence only** mode makes no LLM call and does not pretend to
+generate an AI conclusion. Use **Model & privacy** to change the provider.
+Stop the foreground server with Ctrl+C. Windows also has `scripts\start.ps1`.
 
-Create an authorized key in [Google AI Studio](https://aistudio.google.com/apikey).
-Edit your **local** `.env`:
+### Development mode
+
+Run the backend in one terminal:
+
+```powershell
+npm run dev:api
+```
+
+Run the frontend in another:
+
+```powershell
+npm --prefix frontend run dev
+```
+
+Open **http://127.0.0.1:5173**. Vite proxies `/api` to port 8000.
+
+## Gemma 4: free-only setup
+
+The [official Gemma API guide](https://ai.google.dev/gemma/docs/core/gemma_on_gemini_api)
+documents these hosted models and image input:
+
+- `gemma-4-26b-a4b-it` (default)
+- `gemma-4-31b-it`
+
+The app permits only those hosted IDs. Check current
+[model pricing](https://ai.google.dev/gemini-api/docs/pricing) and account access
+before use. Availability and free quotas are not guaranteed by this repository.
+
+### Configure your key safely
+
+1. Sign in to [Google AI Studio](https://aistudio.google.com/apikey) with your
+   authorized personal account.
+2. Use a project explicitly labeled **Free tier**, with billing disabled.
+   **Do not add a payment method or click Set up billing.**
+3. Create a dedicated key and save it only in your local `.env`.
+4. Set the confirmation flag below, then restart the server.
+5. Select Gemma in **Model & privacy** and approve document sharing before a request.
 
 ```dotenv
-GEMINI_API_KEY=your-key-goes-here-only-locally
+GEMINI_API_KEY=your-key-only-in-this-local-file
 GEMMA_MODEL=gemma-4-26b-a4b-it
+GEMINI_FREE_TIER_CONFIRMED=true
 ```
 
-Restart the API, open **Model & privacy**, and select **Gemma 4 via Gemini API**.
-Before submitting a question, confirm the document-sharing checkbox.
-**Page vision** additionally shares rendered source-page images; leave it off
-when text evidence is sufficient.
+The confirmation flag is **your attestation**, not an independent billing audit.
+The key never goes into the browser. Quota failures remain failures: the app
+does not enable billing, retry through a paid model or silently change providers.
+
+Only selected passages and recent questions from the same package are sent.
+Enabling **Page vision** also sends up to two rendered source pages. Images can
+contain more information than the displayed quotation.
 
 Use public or authorized, appropriately redacted documents. Read the
-[Gemini API terms](https://ai.google.dev/gemini-api/terms), including applicable
-data-use conditions. Do not assume an unpaid API has confidential-data guarantees.
+[API data-use terms](https://ai.google.dev/gemini-api/terms); do not assume that
+unpaid access provides confidential-data guarantees.
 
-### 5. Optional local inference
+## Local alternatives
 
-Configure an already installed Ollama instance:
+### Evidence search
 
-```dotenv
-OLLAMA_BASE_URL=http://127.0.0.1:11434
-OLLAMA_MODEL=qwen3.5:4b
-```
+`RETRIEVAL_MODE=bm25` works immediately without any model download. It uses a
+BM25 baseline with Indian-tender terminology expansion. This is a transparent
+baseline, not a claim that keyword search equals semantic retrieval.
 
-Choose **Local Ollama** in the UI. Cloud/remote model metadata is rejected.
-Configure Ollama itself for local-only operation (`OLLAMA_NO_CLOUD=1`) and do not
-sign into or select a cloud model. CPU inference can take minutes. Vision requires
-a model that actually supports image input.
+### Optional local embeddings
 
-Gemma API use is the intended Gemma-track path. A local Qwen option is an explicit
-alternative for experimentation, **not a claim that Qwen is Gemma**.
-
-## Local embeddings and reranking
-
-The default BM25 pipeline is intentionally usable without downloading model weights.
-For the pretrained local hybrid pipeline:
+If an approved local Ollama instance is available, install its embedding model:
 
 ```powershell
-uv sync --extra retrieval
+ollama pull embeddinggemma
 ```
 
-Then edit `.env` and restart:
+Then configure:
 
 ```dotenv
 RETRIEVAL_MODE=hybrid
-EMBEDDING_MODEL=intfloat/multilingual-e5-small
-RERANK_ENABLED=true
-RERANK_MODEL=Xenova/ms-marco-MiniLM-L-6-v2
+EMBEDDING_MODEL=embeddinggemma
+OLLAMA_BASE_URL=http://127.0.0.1:11434
 ```
 
-FastEmbed downloads these public model weights on first use. Inference stays local;
-document text is not uploaded to an embedding API. Model downloads require permitted
-network access and their respective licenses still apply.
+Hybrid mode combines BM25 and local embedding rankings with reciprocal-rank fusion.
+Vectors are cached locally with a model/title/content hash. Pin the model version
+and clear the local embedding cache after changing downloaded model weights.
+If embedding initialization
+fails, the app reports it instead of silently changing retrieval methods.
 
-Hybrid retrieval combines BM25 and dense rankings using reciprocal-rank fusion.
-The reranker is English-oriented and is skipped for Devanagari queries with an
-explicit notice. Hindi support is experimental: neither a multilingual embedding
-model nor a language pack proves Hindi-tender accuracy.
+**A cross-encoder reranker is not implemented in this baseline.** Add one only
+after comparing measured retrieval failures on the development set.
 
-Cache files and model assets are under `data/`, excluded from Git. If the chosen
-pipeline cannot initialize, the app reports that failure instead of silently
-using a different retrieval method.
+### Optional local generation
 
-## Scanned documents and Hindi
+```dotenv
+OLLAMA_MODEL=qwen3.5:4b
+```
 
-Install Tesseract from an approved source and add its executable to PATH.
-Use `tesseract --list-langs` to confirm the language packs. For English/Hindi:
+Choose **Local Ollama** in the UI. A local Qwen option is not presented as Gemma.
+Cloud-tagged/remote models are rejected; configure Ollama itself with
+`OLLAMA_NO_CLOUD=1`. CPU inference can take minutes. Page vision requires an
+image-capable local model.
+
+## Local OCR and PDF handling
+
+PDF text and table extraction use `pdf-parse`/PDF.js. Page previews are rendered
+locally. Text extraction does not follow hyperlinks or execute PDF JavaScript.
+
+Scanned pages and PNG/JPG images use **Tesseract.js with packaged English/Hindi
+model assets**. They are installed through npm; OCR does not download language
+files or send images to a cloud OCR service at runtime.
 
 ```dotenv
 OCR_ENABLED=true
-OCR_LANGUAGES=eng+hin
+OCR_LANGUAGES=eng
+# For an experimental English/Hindi pilot:
+# OCR_LANGUAGES=eng+hin
 ```
 
-Restart the API, then re-upload documents that previously failed extraction.
-OCR is bounded per page. Scanned-table reconstruction is limited: inspect the
-original page and use authorized page vision when needed. Do not assume OCR
-preserves columns, decimal places or footnotes.
+OCR and table extraction can still misread amounts, units and footnotes. Their
+output is not a substitute for original-page review. Entirely unreadable uploads
+fail rather than appearing to upload successfully.
+
+## Architecture
+
+```text
+React / TypeScript / Vite
+          |
+  Local Express / Node 24
+          |
+  SQLite + private upload files
+          |
+  PDF/text extraction + local OCR + table rows + page provenance
+          |
+  BM25 OR BM25 + local embeddings
+          |
+  Evidence only OR consent-gated free Gemma / local Ollama
+          |
+  Answer schema + source-ID / verbatim-quote checks
+          |
+  Answer + evidence cards + original page
+```
+
+Repository boundaries:
+
+| Module | Responsibility |
+|---|---|
+| `server/src/documents.ts` | Extraction, OCR, upload validation and page rendering |
+| `server/src/store.ts` | SQLite, source provenance and package isolation |
+| `server/src/retrieval.ts` | Local candidate selection and optional hybrid ranking |
+| `server/src/answering.ts` | Provider calls, free-only guard and citation checks |
+| `frontend/` | Review workspace, consent and source navigation |
+
+Uploaded documents are data, not executable instructions. No model tools, web
+search, document-supplied URLs or shell commands are enabled.
 
 ## Indian sample data
 
-### Included: synthetic development package
+### Bundled synthetic package
 
-`backend/tenderlens/data/demo.json` is original fictional data containing a notice,
-eligibility conditions, a BOQ and a date-only corrigendum. It is bundled with the
-application and safe to use without an external tender download.
+`fixtures/demo.json` is original fictional material: a notice, eligibility rules,
+a BOQ and a date-only corrigendum. All dates, institutions and amounts are
+fictional; the future-dated amendment is an intentional test scenario.
 
 `datasets/synthetic-development.json` contains ten development questions with
-expected answers and required source documents. They are **not training data,
-not an independent benchmark, and not real procurement advice**.
+expected answers and required source documents. It is **not training data,
+not a held-out benchmark and not real procurement advice**.
 
-### Download separately: official historical Indian documents
+### Official historical documents, kept out of Git
 
 `datasets/sources.json` records an IISc Bengaluru archive, a 2021 wall-mounted-fan
-tender and its listed corrigendum. These are historical reading examples, not
-active opportunities. The manifest records content hashes and rights limitations.
+tender and its listed corrigendum. These are historical reading examples,
+**not active procurement opportunities**.
 
 ```powershell
-python scripts\fetch_public_samples.py --acknowledge-source-terms
+npm run samples -- --acknowledge-source-terms
 ```
 
-Downloads go to `data/public/iisc-wall-fans-2021/` with a SHA-256 provenance receipt.
-Review the references and the actual amendment scope, then upload the PDFs through
-the UI. The script rejects non-PDF responses, unexpected hosts, oversized downloads
-and changed hashes. It does not bypass login, CAPTCHA or source access controls.
+Files go to `data/public/iisc-wall-fans-2021/` with SHA-256 receipts. The downloader
+allows only manifest-listed official hosts, checks file size/signatures/hashes,
+and stops on unexpected redirects. It does not bypass CAPTCHA, login or access
+controls. Review the actual reference and amendment scope before linking documents.
 
-**Real PDFs are not committed or redistributed.** Public availability is not a
-training or redistribution license. Publisher terms and attribution remain applicable.
+Real PDFs are not committed or redistributed. Public access does not itself
+establish a training or redistribution license; publisher terms still apply.
 
 ### Why no random Kaggle dataset?
 
-The first requirement is an Indian tender package with authoritative source pages,
-not an unrelated document benchmark. No Kaggle credentials or dataset are required.
-A future Kaggle source must first be checked for Indian coverage, original-document
-provenance, license, duplicate tender families and usable page-level annotations.
+The first need is an Indian tender package with authoritative source evidence,
+not an unrelated document benchmark. No Kaggle credential is required.
+A future Kaggle source must be checked for Indian coverage, original-document
+provenance, license, duplicates and usable annotations.
 
-For a real evaluation pilot, collect 10-20 permitted Indian tender packages and
-200-500 human-reviewed questions. Separate development and untouched test packages.
-Keep a tender and all its amendments in the same split; avoid near-identical template
-families leaking across splits.
+For a real pilot, collect 10-20 permitted packages and 200-500 human-reviewed
+questions. Separate development and untouched test packages; keep a tender and
+all its amendments together. Near-identical templates should not leak across splits.
 
-## Validation
-
-### Backend
+## Run the checks locally — no hosted-runner charge
 
 ```powershell
-uv run pytest -q
-uv run ruff check backend tests scripts
-```
-
-Tests cover source isolation, consent/key gates, malformed/oversized uploads,
-PDF page previews, synthetic amendments, quote validation, provider request shape
-and local-only routing. They use a mocked hosted API, not a paid or live Gemma call.
-
-### Frontend and browser
-
-```powershell
-npm --prefix frontend run lint
-npm --prefix frontend run build
-cd frontend
+npm run check
+npm run build
 npm run test:e2e
 ```
 
-Local browser checks use installed Microsoft Edge. CI uses Chromium.
-Playwright starts and stops a dedicated API server with separate test data.
+The backend suite uses Node's test runner. It exercises package isolation,
+consent/free-tier gates, invalid uploads, PDF previews, OCR, amendments, provider
+request shape and citation rejection. Hosted API requests are mocked in this suite.
 
-If backend dependencies are unavailable, UI-only contract checks can run against
-explicit browser fixtures:
+Playwright uses installed **Microsoft Edge** locally and starts/stops its own API
+server with separate data. It does not use your personal browser profile.
+
+For a UI-only contract check:
 
 ```powershell
 $env:MOCK_API = "1"
@@ -286,107 +315,91 @@ npm run test:e2e
 Remove-Item Env:MOCK_API
 ```
 
-These mock checks **do not prove backend or model functionality**. GitHub Actions
-runs real backend tests on Windows/Linux and browser flows against the real API.
+Mock-mode checks are **not** backend or model validation.
 
-### Retrieval development checks
+### Development retrieval report
 
 ```powershell
-uv run python scripts\check_retrieval.py
+npm run evaluate:retrieval
 ```
 
-This reports whether expected synthetic source documents were retrieved.
-It does not grade answer correctness. Measure OCR critical-field errors, evidence
-recall, citation support, amendment handling, abstention, latency and cost separately.
+This reports expected synthetic source-document and exact page/evidence-span
+coverage, not LLM answer accuracy.
+Measure extraction errors, evidence recall, claim support, amendment handling,
+abstention, latency and cost separately.
 
-## Configuration reference
+### Optional GitHub Actions
 
-| Variable | Default | Purpose |
+Hosted checks are **manual and gated off by default**. They do not run on a push.
+Before enabling them, independently verify available free Actions allowance and
+a no-spend safeguard in your personal account.
+
+The workflow requires both the repository variable `FREE_CI_CONFIRMED=true`
+and an explicit dispatch confirmation. The default setup keeps the variable false.
+Hosted Actions execution is also disabled in this repository's settings; only
+re-enable it after verifying a no-spend account configuration.
+There are no paid fallbacks, stored runner artifacts or automatic deployments.
+Running local checks is sufficient to develop this prototype.
+
+## Configuration
+
+| Variable | Default | Meaning |
 |---|---|---|
-| `GEMINI_API_KEY` | empty | Server-only key; never returned by `/api/config` |
-| `GEMMA_MODEL` | `gemma-4-26b-a4b-it` | Hosted Gemma model |
-| `TENDERLENS_DATA_DIR` | `./data` | SQLite, originals and caches |
+| `GEMINI_API_KEY` | empty | Server-only key |
+| `GEMMA_MODEL` | `gemma-4-26b-a4b-it` | Restricted hosted-model choice |
+| `GEMINI_FREE_TIER_CONFIRMED` | `false` | User confirms project billing is disabled |
+| `TENDERLENS_DATA_DIR` | `./data` | Database, originals and local caches |
 | `RETRIEVAL_MODE` | `bm25` | `bm25` or `hybrid` |
-| `EMBEDDING_MODEL` | `intfloat/multilingual-e5-small` | Optional local embedder |
-| `RERANK_ENABLED` | `false` | Requires hybrid retrieval |
-| `RERANK_MODEL` | `Xenova/ms-marco-MiniLM-L-6-v2` | Optional English cross-encoder |
-| `OCR_ENABLED` | `false` | Local scanned-page OCR |
-| `OCR_LANGUAGES` | `eng` | Installed Tesseract languages |
+| `EMBEDDING_MODEL` | `embeddinggemma` | Optional local Ollama embedder |
+| `OCR_ENABLED` | `true` | Local OCR for scans |
+| `OCR_LANGUAGES` | `eng` | `eng`, `hin` or `eng+hin` |
 | `OLLAMA_BASE_URL` | `http://127.0.0.1:11434` | Loopback only |
-| `OLLAMA_MODEL` | `qwen3.5:4b` | Explicit local alternative |
+| `OLLAMA_MODEL` | `qwen3.5:4b` | Explicit local-generation alternative |
+| `PORT` | `8000` | Local HTTP port |
 
-## Privacy and operational boundaries
+## Privacy and deployment limits
 
-- Files, extracted content, embeddings and chat history are stored unencrypted
-  in the selected local data directory. Protect that directory; retain only permitted data.
-- Hosted requests require explicit UI consent and a server-side key. Selected
-  page images can contain more information than the quoted passage.
-- Source-ID/quote checks do not establish semantic entailment, eligibility or
-  legal precedence. Users must inspect original documents before acting.
-- Host/origin checks reduce accidental browser exposure; they are **not
-  authentication**. Other authorized users/processes on the same machine are
-  outside this prototype's isolation boundary.
-- Do not expose the server publicly. Production needs identity/authorization,
-  encrypted storage, tenant isolation, retention/deletion controls, quotas,
-  sandboxed document workers, monitoring and a separate security review.
+- Files, extracted text, embeddings and chat history are stored unencrypted in
+  the local data directory. Protect it and retain only permitted material.
+- Source-ID and quote checks do **not** prove semantic entailment, eligibility or
+  legal precedence. There is no guarantee against hallucinations.
+- Host/origin checks are not authentication. Other users/processes on the same
+  machine are outside the prototype's isolation boundary.
+- The app is a single-user local tool, not a public SaaS service. Production needs
+  identity, tenant isolation, encrypted storage, retention/deletion controls,
+  quotas, sandboxed workers and a separate security review.
+- Do not bypass organizational package/network controls. The current app uses
+  npm normally; it does not transport blocked Python packages through another host.
 
-## Corporate networks / package access
+## Container option
 
-An accessible `https://pypi.org/` index does not guarantee that the package-file
-host `https://files.pythonhosted.org/` is permitted. If downloads fail on a managed
-DevBox, ask its owner or IT for the **approved Python package feed and instructions**,
-or use a permitted personal development machine.
-
-Do not disable TLS verification, tunnel around a network block, put credentials in
-index URLs, or use an untrusted mirror. This repository does not contain internal
-feed addresses, company tokens, employer code or private work configuration.
-
-GitHub-hosted CI validates the original project code and synthetic fixtures on
-separate standard runners. It does not move downloaded packages back onto the
-restricted DevBox or change the DevBox's policy.
-
-## Container setup
-
-On a permitted machine with Docker:
+No container or cloud resource is created automatically. On a permitted machine:
 
 ```powershell
 docker build -t tenderlens .
 docker run --rm -p 127.0.0.1:8000:8000 --env-file .env -v tenderlens-data:/app/data tenderlens
 ```
 
-The container includes English/Hindi Tesseract and runs as a non-root user.
-Set `OCR_ENABLED=true` to use OCR. It does not include local LLM weights or optional
-embedding models. Loopback Ollama refers to the container itself; configure a
-reviewed local network integration before attempting container-to-host inference.
+The image is configured for a non-root user and packages local OCR. Keep the host
+port bound to loopback. Container packaging is optional and must be verified in
+your target environment; it is not an Azure deployment or a free-cloud guarantee.
+Loopback Ollama refers to the container itself, not your host.
 
-## Roadmap and training policy
+## Roadmap: evaluate before training
 
-1. Establish the pretrained extraction/retrieval/Gemma baseline with source evidence.
-2. Assemble permitted Indian tender packages and human-reviewed development/test splits.
-3. Diagnose errors by component rather than guessing that the LLM needs training.
-4. Improve the failing extractor, chunking, retrieval, reranker or prompt.
-5. Consider targeted fine-tuning only after repeatable failures and a held-out
-   comparison demonstrate a need. No training job is included in this prototype.
+1. Establish the pretrained OCR/retrieval/Gemma baseline.
+2. Assemble permitted Indian packages and human-reviewed development/test splits.
+3. Diagnose failures by component.
+4. Improve extraction, chunking, retrieval, reranking or prompts where evidence
+   shows a problem.
+5. Consider targeted fine-tuning only if a held-out comparison demonstrates value.
 
-Multi-user cloud deployment, Excel BOQs, robust scanned-table reconstruction,
-regional-language evaluation and explicit amendment-scope reasoning are next-stage
-work. International expansion comes after the Indian workflow is evaluated;
-currency, date conventions, procurement terminology and jurisdiction policies
-must not be blindly generalized.
+Excel BOQs, stronger scanned-table structure, measured Hindi/regional-language
+support, a reranker and multi-user deployment remain future work. International
+expansion comes after the Indian workflow is evaluated.
 
-## Project layout
-
-```text
-backend/tenderlens/   API, extraction, retrieval, providers, storage and demo
-frontend/            React workspace and browser tests
-tests/               Backend regression tests
-datasets/            Source manifests and synthetic development questions
-scripts/             Approved-source downloader and retrieval checks
-data/                Private runtime artifacts (gitignored)
-```
-
-## License and attribution
+## License
 
 Application code and original synthetic fixtures: [MIT](LICENSE).
-Theme and third-party notices: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+Theme/dependency notices: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 Downloaded documents, model weights and dependencies retain their own terms.

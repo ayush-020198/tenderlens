@@ -325,15 +325,15 @@ function App() {
               )}
             </div>
             <div className="composer-area">
-              {provider === 'gemma' && <label className="consent-line"><input type="checkbox" checked={consent} onChange={event => setConsent(event.target.checked)} />I may share selected excerpts, recent questions{includeImages ? ' and page images' : ''} with Google for this request.</label>}
+              {provider === 'gemma' && <label className="consent-line"><input type="checkbox" checked={consent} disabled={asking} onChange={event => setConsent(event.target.checked)} />I may share selected excerpts, recent questions{includeImages ? ' and page images' : ''} with Google for this request.</label>}
               <form className="composer" onSubmit={event => void ask(event)}>
                 <textarea id="question" aria-label="Ask about this tender" rows={2} maxLength={1600}
                   placeholder={ready ? 'Ask about dates, EMD, eligibility, a BOQ row…' : 'Add a tender package to begin…'}
                   value={question} onChange={event => setQuestion(event.target.value)} disabled={!ready || asking}
                   onKeyDown={event => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); void ask() } }} />
                 <div className="composer-bottom">
-                  <div><button type="button" className="context-count" disabled={asking || busy} onClick={() => selectedId ? setUploadOpen(true) : setNewOpen(true)} aria-label="Add a document to this package"><FileCheck2 size={14} />{documents.length} documents <Plus size={12} /></button><button type="button" className={`vision-toggle ${includeImages ? 'enabled' : ''}`} disabled={provider === 'evidence'} onClick={() => setIncludeImages(!includeImages)}><ImageIcon size={14} />Page vision {includeImages ? 'on' : 'off'}</button></div>
-                  <button className="send-button" aria-label="Send question" disabled={!ready || asking || question.trim().length < 3 || (provider === 'gemma' && (!consent || !config?.google_configured))}>
+                  <div><button type="button" className="context-count" disabled={asking || busy} onClick={() => selectedId ? setUploadOpen(true) : setNewOpen(true)} aria-label="Add a document to this package"><FileCheck2 size={14} />{documents.length} documents <Plus size={12} /></button><button type="button" className={`vision-toggle ${includeImages ? 'enabled' : ''}`} disabled={provider === 'evidence' || asking} onClick={() => setIncludeImages(!includeImages)}><ImageIcon size={14} />Page vision {includeImages ? 'on' : 'off'}</button></div>
+                  <button className="send-button" aria-label="Send question" disabled={!ready || asking || question.trim().length < 3 || (provider === 'gemma' && (!consent || !config?.google_configured || !config?.google_free_tier_confirmed))}>
                     {asking ? <LoaderCircle size={18} className="spin" /> : <Send size={18} />}
                   </button>
                 </div>
@@ -397,7 +397,7 @@ function App() {
         <span className="eyebrow">TRANSPARENCY BY DESIGN</span><h2 id="settings-title">Choose how answers happen.</h2><p>The mode is always visible. No hidden provider fallback.</p>
         {([
           ['evidence', 'Evidence only', 'Find relevant passages locally. No API key, no LLM, no external sharing.', Search],
-          ['gemma', 'Gemma 4 via Gemini API', config?.google_configured ? `${config.gemma_model} · key configured on server.` : 'Add GEMINI_API_KEY to the server .env and restart. Your key never goes in the browser.', Sparkles],
+          ['gemma', 'Gemma 4 via Gemini API', config?.google_configured ? (config.google_free_tier_confirmed ? `${config.gemma_model} · key configured · Free-tier project confirmed.` : 'Key configured, but the Free-tier project is not confirmed. Billing must stay disabled.') : 'Add GEMINI_API_KEY to the server .env and restart. Your key never goes in the browser.', Sparkles],
           ['ollama', 'Local Ollama', `${config?.ollama_model ?? 'Local model'} · localhost only. CPU inference may take minutes.`, LockKeyhole],
         ] as const).map(([value, title, description, Icon]) => <button key={value} className={`provider-option ${provider === value ? 'selected' : ''}`}
           disabled={asking} onClick={() => { setProvider(value); setConsent(false); if (value === 'evidence') setIncludeImages(false) }}>

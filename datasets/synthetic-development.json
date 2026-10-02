@@ -2,10 +2,22 @@
   "dataset_id": "tenderlens-india-synthetic-development-v1",
   "split": "development",
   "notices": [
-    "These are original synthetic fixtures derived from backend/tenderlens/data/demo.json.",
+    "These are original synthetic fixtures derived from fixtures/demo.json.",
     "Not a held-out benchmark, real-procurement evidence, or training dataset.",
     "Answer correctness needs manual/semantic review; retrieval coverage alone is not accuracy."
   ],
+  "evidence_anchors": {
+    "deadline": {"document": "03_Demo_Corrigendum_01.pdf", "page": 1, "quote": "to 27 October 2026 at 15:00 IST."},
+    "emd": {"document": "01_Demo_Notice_and_Eligibility.pdf", "page": 1, "quote": "Earnest Money Deposit (EMD): INR 50,000"},
+    "exemption": {"document": "01_Demo_Notice_and_Eligibility.pdf", "page": 1, "quote": "No EMD exemption is specified"},
+    "turnover": {"document": "01_Demo_Notice_and_Eligibility.pdf", "page": 2, "quote": "Average annual turnover of at least INR 25 lakh"},
+    "documents": {"document": "01_Demo_Notice_and_Eligibility.pdf", "page": 2, "quote": "Submit PAN, GST registration, signed bid form, EMD payment proof"},
+    "boq": {"document": "02_Demo_BOQ.pdf", "page": 1, "quote": "Dual-band wireless access point | 40 | Nos."},
+    "cable": {"document": "02_Demo_BOQ.pdf", "page": 1, "quote": "Cat 6 cable | 1800 | metres"},
+    "gst": {"document": "02_Demo_BOQ.pdf", "page": 1, "quote": "Base prices must exclude GST. Bidder must state GST separately."},
+    "delivery": {"document": "01_Demo_Notice_and_Eligibility.pdf", "page": 2, "quote": "Delivery and commissioning within 45 days of the purchase order."},
+    "unknown-gst-rate": {"document": "01_Demo_Notice_and_Eligibility.pdf", "page": 2, "quote": "No GST percentage is prescribed in this package."}
+  },
   "questions": [
     {"id": "deadline", "question": "What is the current bid submission deadline? Check the corrigendum.", "answer": "27 October 2026 at 15:00 IST", "required_documents": ["03_Demo_Corrigendum_01.pdf"], "type": "amendment"},
     {"id": "emd", "question": "What is the EMD amount?", "answer": "INR 50,000", "required_documents": ["01_Demo_Notice_and_Eligibility.pdf"], "type": "amount"},
