@@ -1,0 +1,32 @@
+{
+  "scope": "IN",
+  "notice": "Historical public documents for a local reading pilot, not live procurement opportunities. Public access does not establish permission to redistribute or train on a document. Original PDFs stay outside Git.",
+  "packages": [
+    {
+      "id": "iisc-wall-fans-2021",
+      "country": "IN",
+      "issuer": "Indian Institute of Science, Bengaluru",
+      "title": "Historical wall-mounted fan tender and corrigendum",
+      "source_page": "https://iisc.ac.in/tenders-from-april-2021-to-june-2021/",
+      "rights": "No explicit redistribution/training license verified. Retain source attribution; do not republish the PDFs without permission.",
+      "documents": [
+        {
+          "id": "notice",
+          "filename": "IISc_Tender_Wall_Mounted_Fan_270521.pdf",
+          "kind": "tender",
+          "url": "https://iisc.ac.in/wp-content/uploads/2021/05/IISc_Tender_Wall_Mounted_Fan_270521.pdf",
+          "sha256": "89eeafff5571a95feef8314e5673ab52a1f0d0b4bb958e3ae5855533f8db7aac"
+        },
+        {
+          "id": "corrigendum",
+          "filename": "CCMD_Corrigendum_Fan.pdf",
+          "kind": "corrigendum",
+          "url": "https://iisc.ac.in/wp-content/uploads/2021/06/CCMD_Corrigendum_Fan.pdf",
+          "sha256": "0b1023682b02943e7addd7d17c476d6f228220c13f8ee29b4e96803bcc17a030",
+          "candidate_amends": "notice",
+          "relationship_note": "Listed on the same official archive; confirm the tender reference and actual amendment scope from the documents before linking in the app."
+        }
+      ]
+    }
+  ]
+}

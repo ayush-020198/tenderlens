@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+  <style>:root { --cp-accent: #b11f4b; --cp-accent-fg: #ffffff; } @media(prefers-color-scheme: dark) { :root { --cp-accent: #fd8ea1; --cp-accent-fg: #1a1a1a; } }</style>
+  <rect width="48" height="48" rx="12" fill="var(--cp-accent)"/>
+  <g fill="none" stroke="var(--cp-accent-fg)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round">
+    <path d="m12 18 12-6 12 6-12 6-12-6Z"/><path d="m12 24 12 6 12-6M12 30l12 6 12-6"/>
+  </g>
+</svg>

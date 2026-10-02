@@ -1,0 +1,21 @@
+{
+  "dataset_id": "tenderlens-india-synthetic-development-v1",
+  "split": "development",
+  "notices": [
+    "These are original synthetic fixtures derived from backend/tenderlens/data/demo.json.",
+    "Not a held-out benchmark, real-procurement evidence, or training dataset.",
+    "Answer correctness needs manual/semantic review; retrieval coverage alone is not accuracy."
+  ],
+  "questions": [
+    {"id": "deadline", "question": "What is the current bid submission deadline? Check the corrigendum.", "answer": "27 October 2026 at 15:00 IST", "required_documents": ["03_Demo_Corrigendum_01.pdf"], "type": "amendment"},
+    {"id": "emd", "question": "What is the EMD amount?", "answer": "INR 50,000", "required_documents": ["01_Demo_Notice_and_Eligibility.pdf"], "type": "amount"},
+    {"id": "exemption", "question": "Does MSME registration establish an EMD exemption in this package?", "answer": "No exemption is specified; do not infer one.", "required_documents": ["01_Demo_Notice_and_Eligibility.pdf"], "type": "qualification"},
+    {"id": "turnover", "question": "What is the turnover requirement and which financial years apply?", "answer": "Average annual turnover of at least INR 25 lakh across FY 2023-24, FY 2024-25 and FY 2025-26.", "required_documents": ["01_Demo_Notice_and_Eligibility.pdf"], "type": "eligibility"},
+    {"id": "documents", "question": "Which mandatory certificates and documents must be submitted?", "answer": "PAN, GST registration, signed bid form, EMD proof, turnover certificate, audited financial statements, completion certificates and manufacturer authorization.", "required_documents": ["01_Demo_Notice_and_Eligibility.pdf"], "type": "checklist"},
+    {"id": "boq", "question": "How many wireless access points are required in the BOQ?", "answer": "40 Nos.", "required_documents": ["02_Demo_BOQ.pdf"], "type": "table"},
+    {"id": "cable", "question": "What is the quantity and unit for Cat 6 cable?", "answer": "1800 metres", "required_documents": ["02_Demo_BOQ.pdf"], "type": "table"},
+    {"id": "gst", "question": "Does the base price include GST?", "answer": "No. Base prices exclude GST and GST must be stated separately.", "required_documents": ["02_Demo_BOQ.pdf"], "type": "commercial"},
+    {"id": "delivery", "question": "What is the delivery and commissioning period?", "answer": "Within 45 days of the purchase order.", "required_documents": ["01_Demo_Notice_and_Eligibility.pdf"], "type": "duration"},
+    {"id": "unknown-gst-rate", "question": "What exact GST percentage should I apply?", "answer": "No GST percentage is prescribed; cannot determine it from this package.", "required_documents": ["01_Demo_Notice_and_Eligibility.pdf"], "type": "abstention"}
+  ]
+}
