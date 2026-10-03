@@ -11,10 +11,11 @@ import { Retriever } from './retrieval.js'
 import { ingest, pagePng } from './documents.js'
 import { seedDemo } from './demo.js'
 import { buildPrompt, collectImages, generate } from './answering.js'
+import { followUpEvidence, retrievalQuestion } from './conversation.js'
 import { AppError, kindSchema, type Answer, type ModelAnswer } from './types.js'
 
 const askSchema = z.object({
-  question: z.string().trim().min(3).max(1600),
+  question: z.string().trim().min(1).max(1600),
   provider: z.enum(['evidence', 'gemma', 'ollama']).default('evidence'),
   consent_external: z.boolean().default(false),
   include_images: z.boolean().default(false),
@@ -26,7 +27,7 @@ const origins = new Set([
   'http://localhost:8765', 'http://127.0.0.1:8765',
 ])
 
-export function createApp(config: Config = loadConfig()) {
+export function createApp(config: Config = loadConfig(), modelFetch: typeof fetch = fetch) {
   const app = express()
   const store = new Store(config.dataDir)
   const retriever = new Retriever(config)
@@ -125,20 +126,22 @@ export function createApp(config: Config = loadConfig()) {
     store.getPackage(id)
     const input = askSchema.parse(request.body)
     if (input.provider === 'gemma') {
-      if (!input.consent_external) throw new AppError(403, 'Confirm permission to share selected excerpts, recent questions and optional images with Google.')
+      if (!input.consent_external) throw new AppError(403, 'Confirm permission to share selected excerpts, recent conversation and optional images with Google.')
       if (!config.geminiKey) throw new AppError(503, 'Set GEMINI_API_KEY in the server .env, then restart.')
       if (!config.freeTierConfirmed) throw new AppError(403, 'Free-tier project confirmation is required. Do not enable billing.')
     }
     const started = performance.now()
-    const history = store.history(id, 3)
-    const query = input.question.split(/\s+/).length < 7 && history.length
-      ? `${history.at(-1)!.question} ${input.question}` : input.question
-    const { evidence, warnings } = await retriever.search(store.evidence(id), query)
-    warnings.push(...store.documents(id).flatMap(document => document.warnings))
+    const history = store.history(id, 4)
+    const chunks = store.evidence(id)
+    const documents = store.documents(id)
+    const query = retrievalQuestion(input.question, history)
+    const retrieved = await retriever.search(chunks, query)
+    const evidence = followUpEvidence(input.question, retrieved.evidence, chunks, history, config.retrievalMode)
+    const warnings = [...retrieved.warnings, ...documents.flatMap(document => document.warnings)]
     let base: ModelAnswer | Pick<Answer, 'status' | 'answer' | 'citations' | 'missing'>
     let imageCount = 0
     let generated = false
-    if (!evidence.length) {
+    if (input.provider === 'evidence' && !evidence.length) {
       base = {
         status: 'insufficient',
         answer: 'No matching passages were retrieved. Try the exact clause or item wording. This is not proof that the information is absent from the tender.',
@@ -152,10 +155,13 @@ export function createApp(config: Config = loadConfig()) {
       }
     } else {
       const images = input.include_images ? await collectImages(store, id, evidence) : []
-      base = await generate(config, input.provider, buildPrompt(input.question, evidence, history, warnings), images, evidence)
+      base = await generate(
+        config, input.provider, buildPrompt(input.question, evidence, history, warnings, documents),
+        images, evidence, modelFetch,
+      )
       imageCount = images.length
       generated = true
-      warnings.push('Source IDs and quoted text were checked. This does not verify every claim; inspect the originals before acting.')
+      if (base.citations.length) warnings.push('Source IDs and quoted text were checked. This does not verify every claim; inspect the originals before acting.')
     }
     const result: Answer = {
       ...base, sources: evidence, warnings: [...new Set(warnings)],

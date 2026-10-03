@@ -7,7 +7,7 @@ import {
 } from 'lucide-react'
 import {
   api, pageImageUrl,
-  type Config, type DocumentKind, type Evidence, type Message, type PackageDetail,
+  type Answer, type Config, type DocumentKind, type Evidence, type Message, type PackageDetail,
   type Page, type Provider, type TenderDocument, type TenderPackage,
 } from './api'
 
@@ -25,6 +25,27 @@ const dateLabel = (date: string | null) => date
   ? new Intl.DateTimeFormat('en-IN', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Asia/Kolkata' }).format(new Date(`${date}T12:00:00+05:30`))
   : 'Issue date not supplied'
 const fetchWorkspace = () => Promise.all([api<Config>('/config'), api<TenderPackage[]>('/packages')])
+const providerPreference = 'tenderlens.provider'
+
+function AnswerSources({ result, onOpen }: { result: Answer; onOpen: (source: Evidence) => void }) {
+  const citedIds = new Set(result.citations.map(citation => citation.source_id))
+  const sources = result.answer_kind === 'generated'
+    ? result.sources.filter(source => citedIds.has(source.source_id))
+    : result.sources
+  if (!sources.length) return null
+  const cards = <div className="evidence-grid">{sources.map(evidence => {
+    const quote = result.citations.find(citation => citation.source_id === evidence.source_id)?.quote
+    return <button key={evidence.source_id} className="evidence-card" onClick={() => onOpen(evidence)}>
+      <div><span className="source-id">{evidence.source_id}</span><span>{kindLabels[evidence.kind]}</span><ArrowUpRight size={14} /></div>
+      <strong>{evidence.document_name}</strong>
+      <p>{quote ?? evidence.text.slice(0, 170)}{!quote && evidence.text.length > 170 ? '…' : ''}</p>
+      <small><FileText size={12} /> Page {evidence.page} · Open source</small>
+    </button>
+  })}</div>
+  return result.answer_kind === 'generated'
+    ? <details className="cited-sources"><summary>{sources.length} cited {sources.length === 1 ? 'source' : 'sources'} · View evidence</summary>{cards}</details>
+    : cards
+}
 
 function App() {
   const [config, setConfig] = useState<Config | null>(null)
@@ -65,6 +86,7 @@ function App() {
   const selectPackage = useCallback((id: string | null) => {
     setSelectedId(id)
     setDetail(null)
+    setConsent(false)
     setSourceDocument(null)
     sourceSequence.current += 1
   }, [])
@@ -82,6 +104,15 @@ function App() {
       if (!cancelled) {
         setConfig(nextConfig)
         setPackages(items)
+        let initialProvider: Provider = nextConfig.google_configured && nextConfig.google_free_tier_confirmed ? 'gemma' : 'evidence'
+        try {
+          const saved = localStorage.getItem(providerPreference)
+          if (saved === 'evidence' || saved === 'gemma' || saved === 'ollama') initialProvider = saved
+          else if (saved !== null) setError('The saved answer mode was invalid. Check the selected mode before continuing.')
+        } catch {
+          setError('Your browser could not restore the answer-mode preference. Check the selected mode before continuing.')
+        }
+        setProvider(initialProvider)
         selectPackage(items[0]?.id ?? null)
       }
     }).catch(e => { if (!cancelled) setError(errorText(e)) })
@@ -145,6 +176,7 @@ function App() {
   async function upload(event: React.FormEvent) {
     event.preventDefault()
     if (!uploadFile || !selectedId) return
+    setConsent(false)
     setBusy(true); setError('')
     const target = selectedId
     const body = new FormData()
@@ -162,7 +194,15 @@ function App() {
   async function ask(event?: React.FormEvent, suggested?: string) {
     event?.preventDefault()
     const text = (suggested ?? question).trim()
-    if (!selectedId || text.length < 3 || asking) return
+    if (!selectedId || !text.length || asking || busy) return
+    if (provider === 'gemma' && (!config?.google_configured || !config.google_free_tier_confirmed)) {
+      setError('Gemma chat needs a configured key and a confirmed Free-tier project. Check Model & privacy.')
+      return
+    }
+    if (provider === 'gemma' && !consent) {
+      setError('Approve sharing for this chat below, or choose Evidence only to keep everything local.')
+      return
+    }
     const target = selectedId
     setError(''); setElapsed(0); setAsking(true); setPendingQuestion(text); setQuestion('')
     try {
@@ -197,8 +237,18 @@ function App() {
     setDark(!dark)
   }
 
+  function chooseProvider(value: Provider) {
+    setProvider(value)
+    setConsent(false)
+    if (value === 'evidence') setIncludeImages(false)
+    try { localStorage.setItem(providerPreference, value) }
+    catch { setError('The mode changed for this visit, but your browser could not save the preference.') }
+  }
+
   const documents = detail?.documents ?? []
   const ready = documents.length > 0
+  const canChat = Boolean(detail) && (ready || provider !== 'evidence')
+  const gemmaReady = Boolean(config?.google_configured && config.google_free_tier_confirmed)
   const providerLabel = provider === 'gemma' ? 'Gemma 4 · API' : provider === 'ollama' ? 'Local Ollama' : 'Evidence only'
   const activePage = pages.find(page => page.number === pageNumber)
   const hasMessages = (detail?.messages.length ?? 0) > 0
@@ -296,23 +346,11 @@ function App() {
                         <span className="avatar assistant-avatar"><Layers3 size={17} /></span>
                         <div className="answer-content">
                           <div className="answer-heading"><span className="message-label">TENDERLENS</span><span className={`status-badge ${message.result.status}`}>
-                            {message.result.status === 'evidence' ? 'Evidence search' : message.result.status === 'insufficient' ? 'More evidence needed' : message.result.status === 'conflicting' ? 'Conflicting evidence' : 'Citations matched'}
+                            {message.result.status === 'evidence' ? 'Evidence search' : message.result.status === 'insufficient' ? (message.result.missing.length ? 'More context needed' : 'Conversation') : message.result.status === 'conflicting' ? 'Conflicting evidence' : 'Citations matched'}
                           </span></div>
                           <p className="answer-text">{message.result.answer}</p>
                           {message.result.missing.length > 0 && <div className="missing-box"><strong>Still needed</strong><ul>{message.result.missing.map(item => <li key={item}>{item}</li>)}</ul></div>}
-                          {message.result.sources.length > 0 && (
-                            <div className="evidence-grid">
-                              {message.result.sources.map(evidence => {
-                                const quote = message.result.citations.find(citation => citation.source_id === evidence.source_id)?.quote
-                                return <button key={evidence.source_id} className="evidence-card" onClick={() => evidenceClick(evidence)}>
-                                  <div><span className="source-id">{evidence.source_id}</span><span>{kindLabels[evidence.kind]}</span><ArrowUpRight size={14} /></div>
-                                  <strong>{evidence.document_name}</strong>
-                                  <p>{quote ?? evidence.text.slice(0, 170)}{!quote && evidence.text.length > 170 ? '…' : ''}</p>
-                                  <small><FileText size={12} /> Page {evidence.page} · Open source</small>
-                                </button>
-                              })}
-                            </div>
-                          )}
+                          <AnswerSources result={message.result} onOpen={evidenceClick} />
                           {message.result.warnings.length > 0 && <details className="answer-warnings"><summary>Evidence limitations ({message.result.warnings.length})</summary><ul>{message.result.warnings.map(item => <li key={item}>{item}</li>)}</ul></details>}
                           <div className="answer-footer"><span>{message.result.answer_kind === 'generated' ? message.result.model : 'Local evidence · no LLM'}</span><span>{message.result.elapsed_seconds}s · {message.result.retrieval_mode}{message.result.image_count ? ` · ${message.result.image_count} page images` : ''}</span></div>
                         </div>
@@ -325,15 +363,25 @@ function App() {
               )}
             </div>
             <div className="composer-area">
-              {provider === 'gemma' && <label className="consent-line"><input type="checkbox" checked={consent} disabled={asking} onChange={event => setConsent(event.target.checked)} />I may share selected excerpts, recent questions{includeImages ? ' and page images' : ''} with Google for this request.</label>}
+              {config && <div className="chat-mode-notice" role="status">
+                {provider === 'evidence' ? <>
+                  <Search size={16} /><span><strong>Source search is on.</strong> It finds passages; it does not explain them.</span>
+                  <button type="button" disabled={asking || busy} onClick={() => gemmaReady ? chooseProvider('gemma') : setSettingsOpen(true)}>
+                    {gemmaReady ? 'Switch to Gemma chat' : 'Set up chat'}<ArrowRight size={13} />
+                  </button>
+                </> : <>
+                  <Sparkles size={16} /><span><strong>{provider === 'gemma' ? 'Gemma chat' : 'Local chat'}.</strong> Ask naturally, then follow up. Sources stay below each answer.</span>
+                </>}
+              </div>}
+              {provider === 'gemma' && <label className="consent-line"><input type="checkbox" checked={consent} disabled={asking} onChange={event => setConsent(event.target.checked)} />Allow Google to use this package’s selected excerpts and recent conversation{includeImages ? ', plus page images,' : ''} during this chat. Resets on reload, package, document or vision changes.</label>}
               <form className="composer" onSubmit={event => void ask(event)}>
                 <textarea id="question" aria-label="Ask about this tender" rows={2} maxLength={1600}
-                  placeholder={ready ? 'Ask about dates, EMD, eligibility, a BOQ row…' : 'Add a tender package to begin…'}
-                  value={question} onChange={event => setQuestion(event.target.value)} disabled={!ready || asking}
+                  placeholder={canChat ? (provider === 'evidence' ? 'Search for dates, EMD, eligibility, a BOQ row…' : 'Ask a question, or say “explain that more simply”…') : 'Add a tender package to begin…'}
+                  value={question} onChange={event => setQuestion(event.target.value)} disabled={!canChat || asking || busy}
                   onKeyDown={event => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); void ask() } }} />
                 <div className="composer-bottom">
-                  <div><button type="button" className="context-count" disabled={asking || busy} onClick={() => selectedId ? setUploadOpen(true) : setNewOpen(true)} aria-label="Add a document to this package"><FileCheck2 size={14} />{documents.length} documents <Plus size={12} /></button><button type="button" className={`vision-toggle ${includeImages ? 'enabled' : ''}`} disabled={provider === 'evidence' || asking} onClick={() => setIncludeImages(!includeImages)}><ImageIcon size={14} />Page vision {includeImages ? 'on' : 'off'}</button></div>
-                  <button className="send-button" aria-label="Send question" disabled={!ready || asking || question.trim().length < 3 || (provider === 'gemma' && (!consent || !config?.google_configured || !config?.google_free_tier_confirmed))}>
+                  <div><button type="button" className="context-count" disabled={asking || busy} onClick={() => selectedId ? setUploadOpen(true) : setNewOpen(true)} aria-label="Add a document to this package"><FileCheck2 size={14} />{documents.length} documents <Plus size={12} /></button><button type="button" className={`vision-toggle ${includeImages ? 'enabled' : ''}`} disabled={provider === 'evidence' || asking} onClick={() => { setIncludeImages(!includeImages); setConsent(false) }}><ImageIcon size={14} />Page vision {includeImages ? 'on' : 'off'}</button></div>
+                  <button className="send-button" aria-label="Send question" disabled={!canChat || asking || busy || !question.trim().length || (provider === 'gemma' && (!consent || !gemmaReady))}>
                     {asking ? <LoaderCircle size={18} className="spin" /> : <Send size={18} />}
                   </button>
                 </div>
@@ -400,7 +448,7 @@ function App() {
           ['gemma', 'Gemma 4 via Gemini API', config?.google_configured ? (config.google_free_tier_confirmed ? `${config.gemma_model} · key configured · Free-tier project confirmed.` : 'Key configured, but the Free-tier project is not confirmed. Billing must stay disabled.') : 'Add GEMINI_API_KEY to the server .env and restart. Your key never goes in the browser.', Sparkles],
           ['ollama', 'Local Ollama', `${config?.ollama_model ?? 'Local model'} · localhost only. CPU inference may take minutes.`, LockKeyhole],
         ] as const).map(([value, title, description, Icon]) => <button key={value} className={`provider-option ${provider === value ? 'selected' : ''}`}
-          disabled={asking} onClick={() => { setProvider(value); setConsent(false); if (value === 'evidence') setIncludeImages(false) }}>
+          disabled={asking} onClick={() => chooseProvider(value)}>
           <Icon size={21} /><span><strong>{title}</strong><small>{description}</small></span>{provider === value && <Check size={18} />}
         </button>)}
         <div className="settings-facts"><span>Retrieval <strong>{config?.retrieval_mode.toUpperCase() ?? '—'}</strong></span><span>Local OCR <strong>{config?.ocr_enabled ? config.ocr_languages : 'Off'}</strong></span><span>Scope <strong>India · English-first</strong></span></div>

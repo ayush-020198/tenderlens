@@ -10,10 +10,10 @@ import { loadConfig, type Config } from '../src/config.js'
 import { makePdf } from '../src/demo.js'
 import type { Package, TenderDocument, Message } from '../src/types.js'
 
-async function serverFor(t: TestContext, overrides: Partial<Config> = {}) {
+async function serverFor(t: TestContext, overrides: Partial<Config> = {}, modelFetch?: typeof fetch) {
   const directory = mkdtempSync(path.join(os.tmpdir(), 'tenderlens-test-'))
   const config = loadConfig({ dataDir: directory, ocrEnabled: false, frontendDir: path.join(directory, 'no-frontend'), ...overrides }, false)
-  const { app, store } = createApp(config)
+  const { app, store } = createApp(config, modelFetch)
   const server = app.listen(0, '127.0.0.1')
   await once(server, 'listening')
   const address = server.address()
@@ -178,9 +178,76 @@ test('scanned images fail clearly when OCR is disabled', async t => {
 
 test('blank or oversized questions are rejected', async t => {
   const { request, item } = await serverFor(t)
-  for (const question of [' ', 'x', 'z'.repeat(1601)]) {
+  for (const question of [' ', '', 'z'.repeat(1601)]) {
     assert.equal((await request(`/api/packages/${item.id}/ask`, {
       method: 'POST', body: JSON.stringify({ question }),
     })).status, 422)
   }
+})
+
+test('Gemma can greet or clarify without a matching tender passage', async t => {
+  let calls = 0
+  const mock: typeof fetch = async (_url, init) => {
+    calls++
+    const payload = JSON.parse(String(init?.body))
+    const prompt = JSON.parse(payload.contents[0].parts[0].text)
+    assert.deepEqual(prompt.passages, [])
+    return Response.json({ candidates: [{
+      finishReason: 'STOP', content: { parts: [{ text: JSON.stringify({
+        status: 'insufficient', answer: 'Hi! What would you like to understand about your tender?',
+        citations: [], missing: [],
+      }) }] },
+    }] })
+  }
+  const { request, item } = await serverFor(t, {
+    geminiKey: 'test-key-not-real', freeTierConfirmed: true,
+  }, mock)
+  const response = await request(`/api/packages/${item.id}/ask`, {
+    method: 'POST', body: JSON.stringify({ question: 'Hi', provider: 'gemma', consent_external: true }),
+  })
+  assert.equal(response.status, 200)
+  const message: Message = await response.json()
+  assert.equal(message.result.answer_kind, 'generated')
+  assert.match(message.result.answer, /^Hi!/)
+  assert.deepEqual(message.result.sources, [])
+  assert.equal(calls, 1)
+})
+
+test('conversation turns retain actual prior evidence and do not cross packages', async t => {
+  const prompts: { recent_conversation_for_context_only: { user: string; assistant: string }[]; passages: { source_id: string; text: string }[] }[] = []
+  const mock: typeof fetch = async (_url, init) => {
+    const payload = JSON.parse(String(init?.body))
+    const prompt = JSON.parse(payload.contents[0].parts[0].text)
+    prompts.push(prompt)
+    const source = prompt.passages.find((passage: { text: string }) => passage.text.includes('50,000'))
+    return Response.json({ candidates: [{
+      finishReason: 'STOP', content: { parts: [{ text: JSON.stringify(source ? {
+        status: 'answered', answer: 'You need to provide an EMD of INR 50,000.',
+        citations: [{ source_id: source.source_id, quote: 'The earnest money deposit is INR 50,000.' }], missing: [],
+      } : {
+        status: 'insufficient', answer: 'Which requirement would you like me to explain?',
+        citations: [], missing: ['The requirement or source clause'],
+      }) }] },
+    }] })
+  }
+  const { request, upload, item } = await serverFor(t, {
+    geminiKey: 'test-key-not-real', freeTierConfirmed: true,
+  }, mock)
+  await upload('The earnest money deposit is INR 50,000.')
+  for (const question of ['What is the EMD?', 'Can you explain that in a much simpler way?']) {
+    const response = await request(`/api/packages/${item.id}/ask`, {
+      method: 'POST', body: JSON.stringify({ question, provider: 'gemma', consent_external: true }),
+    })
+    assert.equal(response.status, 200, await response.clone().text())
+  }
+  assert.equal(prompts[1].recent_conversation_for_context_only[0].assistant, 'You need to provide an EMD of INR 50,000.')
+  assert.ok(prompts[1].passages.some(source => source.text.includes('50,000')))
+  const other: Package = await (await request('/api/packages', {
+    method: 'POST', body: JSON.stringify({ name: 'Unrelated package' }),
+  })).json()
+  await request(`/api/packages/${other.id}/ask`, {
+    method: 'POST', body: JSON.stringify({ question: 'Explain that.', provider: 'gemma', consent_external: true }),
+  })
+  assert.deepEqual(prompts[2].recent_conversation_for_context_only, [])
+  assert.deepEqual(prompts[2].passages, [])
 })

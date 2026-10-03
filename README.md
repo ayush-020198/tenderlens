@@ -94,8 +94,11 @@ npm start
 Open **http://127.0.0.1:8000**. Choose **Take a closer look** to load the original
 synthetic Indian package. Ask about its deadline, EMD or BOQ.
 
-The default **Evidence only** mode makes no LLM call and does not pretend to
-generate an AI conclusion. Use **Model & privacy** to change the provider.
+If a Gemma key and Free-tier confirmation are configured, the UI initially selects
+**Gemma chat**. Otherwise it starts in **Evidence only**, which searches passages
+without generating an answer. An explicit mode choice is remembered in this browser.
+No hosted request happens until you approve sharing and send a message.
+Use **Model & privacy** or **Switch to Gemma chat** to change the provider.
 Stop the foreground server with Ctrl+C. Windows also has `scripts\start.ps1`.
 
 ### Development mode
@@ -146,9 +149,25 @@ The confirmation flag is **your attestation**, not an independent billing audit.
 The key never goes into the browser. Quota failures remain failures: the app
 does not enable billing, retry through a paid model or silently change providers.
 
-Only selected passages and recent questions from the same package are sent.
+Selected passages and up to four recent user/assistant exchanges from the same
+package are sent. Previous answers provide conversational context, not factual
+authority: tender claims still need quotes from reloaded source passages.
 Enabling **Page vision** also sends up to two rendered source pages. Images can
 contain more information than the displayed quotation.
+
+Sharing approval lasts only for the current package/chat in this page. Reloading,
+changing package/provider, adding a document or toggling page vision clears it.
+The provider preference is saved locally; the sharing approval is not.
+
+### Conversation, not just matching passages
+
+Ask a question, then follow up with “explain that more simply” or “why does that
+matter?”. Chat uses bounded recent history, answers in plain language first, and
+keeps cited sources under **View evidence**. It can greet you or ask a clarification
+even when there is no matching clause; it must not invent tender facts.
+Source-search mode remains available and is clearly labeled as non-conversational.
+Follow-up retrieval uses a bounded heuristic and fresh package evidence; it is not
+unlimited memory or a guarantee of understanding every ambiguous reference.
 
 Use public or authorized, appropriately redacted documents. Read the
 [API data-use terms](https://ai.google.dev/gemini-api/terms); do not assume that
